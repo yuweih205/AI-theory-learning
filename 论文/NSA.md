@@ -78,7 +78,67 @@
 
 
 
+ 为啥在大模型的训练初期，第一层使用 MoE 可能导致训练不稳定
+
 
 
 举个例子：GQA的实现
 
+
+
+旋转位置编码不太理解，还有Vit中的旋转位置编码
+
+即便q不参与梯度更新，kv也会参与？
+
+
+
+在 LongBench(长上下文ben)，SQA单文档，MQA多文档，Synthetic（需要在大量无关文本中找到特定信息)。
+
+还有很多方法，H2O, KV-cache eviction, query-aware selection, and exact top-𝑛 sparse selection.
+
+为啥稀疏注意力baselines 不支持训练 应该是以前的不支持训练吧
+
+* 评估的温度和top-p value是什么
+
+ 	温度低倾向于选择概率最高的词，高温度更加随机，倾向于引入更多随机性，top-p采样，模型将所有可能的下一个词按概率从高到低排序，选择累计概率达到p的最小集合，然后随机选一个
+
+* 这个梯度更新是怎么做的 那部分稀疏的
+
+
+
+* 这个避免灾难性遗忘还需要多多调试感觉 粒度
+
+
+
+
+
+* Coalesced loads 这是 CUDA 中的一个**内存访问优化概念**，指同一个 warp（32 个线程）访问全局内存时，尽可能访问连续地址，从而合并为一条内存读指令。
+
+
+
+
+
+感觉NSA带来的收益可能只是因为训练的时候就这样做了 其他方案做了一样有效果
+
+* 注意力高分段成块状聚类分布，但看图，横竖都不一定啊，为啥时每行切，不是每列切  为啥每行是一个token 但是看图感觉更倾向于列状分块 
+
+* 为啥启发性无参数的重要性打分策略容易导致召回率低  ？？ 
+  * 启发式策略无法自适应复杂语境，容易漏掉真正有用但“看起来不重要”的 token 或 expert 那为啥还用
+* 什么叫auxiliary loss-based selecton
+  * 辅助损失驱动的token/block选择机制，不是用启发式打分(如范数)，额外训练目标来学习token/block的重要性分数
+* 监督信号是什么
+  * 目标分布要逼近的分布 类似标准答案
+* attention sink是指在流式编码中扮演汇聚点(sink)角色的token 不随滑动窗口而被丢弃 Xiao et al 发现，出事token能吸引非常高的attention权重，尽管语义不重要，但能让模型对全局信息的分布接近原先的训练状态，从而稳定性能
+* 前后窗口vs前面窗口
+  * Encoder-style Attention 天生就是双向的：模型在做分类、QA、检索增强等任务时，能同时利用一个词前后的上下文信息。如果只看“前面”的 Token，主要用在文本生成/解码里；Longformer 的论文是针对长序列编码 (e.g. 文档分类、阅读理解)，所以用对称窗口。
+
+* 感觉后面这些方法并不是不行 只是没有在训练的时候就应用进去
+* HashAttention (Desai et al., 2024) formulates pivotal token identification as a recommendation problem by mapping queries and keys to Hamming space using learned functions. 这个能不能做一个专用于推荐的改进？？
+* 梯度累积是什么 什么时候用 怎么优化训练时  训练时的kvcache
+* 
+
+
+
+
+
+FLash attention和linear attention
