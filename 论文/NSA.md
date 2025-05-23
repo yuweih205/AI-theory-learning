@@ -135,10 +135,29 @@
 * 感觉后面这些方法并不是不行 只是没有在训练的时候就应用进去
 * HashAttention (Desai et al., 2024) formulates pivotal token identification as a recommendation problem by mapping queries and keys to Hamming space using learned functions. 这个能不能做一个专用于推荐的改进？？
 * 梯度累积是什么 什么时候用 怎么优化训练时  训练时的kvcache
-* 
+* 为啥不直接搞个多层attention  额mla就是
 
 
 
 
 
-FLash attention和linear attention
+FLash attention和linear attention  chunk  page attention
+
+
+
+算法实现：
+
+1、压缩 q v分块 每块压缩成一个值  这个压缩方法有很多  但这样会导致信息碎片化或者说隔离 可以让block长度大于切割长度  论文里面说的是按mlp 这个这里的计算强度分析    这个mlp能不能只输入seq
+
+2、 天然的空间连续性  这种连续性会因为别的xx而改变吗 那个特征图感觉不太靠谱？前面也有论文证明这个 
+
+原始q乘以压缩的k 变成注意力  如果有交叠部分  做一个平滑加权计算  周围所有的block都算一遍？？？  选择前topn个计算全量注意力
+
+ 3、前n个结构化稀疏
+
+
+
+还是不太清楚他是怎么实现梯度回传 压缩更新的
+
+对dimension压缩的时候 能不能说明两件事情  一是通道维度附近本身就有相似性  二是可能不需要这么多维度就能达到一样的效果
+
